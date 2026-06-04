@@ -1,0 +1,17 @@
+{
+  "name": "token-of-esteem-mcp",
+  "version": "0.1.0",
+  "description": "Front door for the Token of Esteem MCP server. The live server is hosted; this repo carries the docs and a minimal introspection stub.",
+  "type": "commonjs",
+  "bin": {
+    "token-of-esteem-mcp": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "homepage": "https://tokenofesteem.com/for-agents",
+  "license": "MIT",
+  "files": [
+    "server.js"
+  ]
+}
