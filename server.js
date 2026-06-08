@@ -14,6 +14,13 @@
 const PROTOCOL = '2025-06-18';
 const SERVER_INFO = { name: 'Token of Esteem', version: '0.1.0' };
 
+// Mirrors the gift status enum on the hosted server (packages/shared gift.ts).
+const GIFT_STATUSES = [
+  'created', 'validating', 'generating', 'output_validating', 'rendering',
+  'awaiting_buyer_preview', 'queued_for_print', 'printed', 'shipped', 'delivered',
+  'held', 'refused', 'cancelled', 'failed',
+];
+
 const TOOLS = [
   { name: 'list_voices', description: 'List the three comedic voices (Hype Man, Best Friend Roast, Conspiracy Theorist) and the cover image model each prefers. Free, no side effects. Call this first to pick a voice.' },
   { name: 'list_formats', description: 'List supported booklet formats. There is one today: manual_v1, a 16-page booklet. Free, no side effects.' },
@@ -21,13 +28,57 @@ const TOOLS = [
   { name: 'get_pricing', description: 'Compute the exact total for a hypothetical gift (format, voice, image model, ship_to) before you commit. Free, no order is created.' },
   { name: 'validate_brief', description: 'Run the content policy on a brief without charging or ordering. Free. Call before create_gift so a refusal surfaces early.' },
   { name: 'create_gift', description: 'Place the order: write, print, and mail the booklet. Charges the buyer. The recipient may be your own user. Idempotent on idempotency_key for 24 hours.' },
-  { name: 'get_gift', description: 'Return the full gift by gift_id, including status and fulfillment tracking. Free.' },
-  { name: 'list_gifts', description: 'Paginated list of gifts on the account, with optional status and date filters. Free.' },
+  {
+    name: 'get_gift',
+    description: 'Return the full gift by gift_id, including status and fulfillment tracking. Free.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        gift_id: {
+          type: 'string',
+          description: 'The gift_id returned by create_gift, identifying the order to fetch.',
+        },
+      },
+      required: ['gift_id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'list_gifts',
+    description: 'Paginated list of gifts on the account, with optional status and date filters. Free.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: GIFT_STATUSES,
+          description: 'Only return gifts in this status, for example shipped, delivered, or cancelled.',
+        },
+        since: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Only return gifts created at or after this ISO 8601 timestamp.',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 50,
+          description: 'Maximum number of gifts to return, 1 to 100. Defaults to 50.',
+        },
+        cursor: {
+          type: 'string',
+          description: 'Opaque pagination cursor from a previous list_gifts response.',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
   { name: 'cancel_gift', description: 'Cancel an in-flight gift and return the refund amount. Free. Fails once the booklet has gone to print.' },
   { name: 'get_account', description: "Return this account's spending caps and month-to-date spend. Free." },
   { name: 'list_recipients', description: "Return the account's saved recipients (address book). Free." },
   { name: 'create_setup_link', description: 'Return a hosted Stripe link for the buyer to save a card or wallet to the account.' },
-].map((t) => ({ ...t, inputSchema: { type: 'object' } }));
+].map((t) => ({ inputSchema: { type: 'object' }, ...t }));
 
 const HOSTED_NOTE =
   'This is a directory introspection stub. Live ordering runs on the hosted MCP endpoint https://mcp.tokenofesteem.com/v1/mcp (account bearer token), or tokenless via HTTP 402 at https://api.tokenofesteem.com/v1/agentic/order. See https://tokenofesteem.com/for-agents.';
